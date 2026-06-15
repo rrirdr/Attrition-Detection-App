@@ -908,7 +908,7 @@ with st.sidebar:
 
 # 🌟 CONFIGURE YOUR PERSISTENT WEB LINK HERE:
 # Paste your public GitHub raw link, Dropbox raw URL, or Google Sheets published CSV URL below
-PERSISTENT_DATA_URL = "https://github.com/rrirdr/Attrition-Detection-App/blob/3975beb1cabd0bb989ab4fc136b2799c56eef6cd/HR_Attrition_MultiCompany.csv"
+PERSISTENT_DATA_URL = "HR_Attrition_MultiCompany.csv"
 
 # --- STEP 1: RESOLVE THE INITIAL BASELINE ENGINE DATA DATA ---
 # Checks for existing workspace data variable; if not found, checks for the web URL
@@ -1584,8 +1584,19 @@ elif page == "Executive Summary":
     # --- Schema Validation Check ---
     # Ensures 'Hire_Date' exists in the loaded dataset before executing the processing engine
     if 'Hire_Date' not in user_df.columns:
-        st.error("⚠️ **Dataset Reference Error:** Please download first the CSV which can be found from the repository (HR_Attrition_MultiCompany.csv) and upload it in the app.")
+        st.error(
+            "⚠️ **Dataset Reference Error:** Please download first the CSV which can be found from the "
+            "[GitHub Repository](https://github.com/rrirdr/Attrition-Detection-App.git) or get the file directly from this "
+            "[Dataset Download Link](https://github.com/rrirdr/Attrition-Detection-App/blob/284d74348c96b7b08de8a8bbf4eacbe07987aec2/HR_Attrition_MultiCompany.csv) "
+            "and upload it in the app."
+        )
         st.stop()  # Halts execution cleanly for this page block so no further errors show up below
+
+    # --- Data Processing Engine ---
+    df_exec = user_df.copy()
+    df_exec['Hire_Date'] = pd.to_datetime(df_exec['Hire_Date'], errors='coerce')
+    df_exec['Exit_Date'] = pd.to_datetime(df_exec['Exit_Date'], errors='coerce')
+    df_exec = df_exec[df_exec['Hire_Date'].notna()]
 
     # --- Data Processing Engine ---
     df_exec = user_df.copy()
