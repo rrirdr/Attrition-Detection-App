@@ -642,7 +642,7 @@ def load_data():
     })
     return df
 
-@st.cache_resource(show_spinner="Training AI model…")
+@st.cache_resource(show_spinner="Training model…")
 def get_trained_model(df_hash):
     """Train + cache the RandomForest. df_hash is a hashable key."""
     df = st.session_state["_df"]
@@ -840,16 +840,16 @@ with st.sidebar:
     page = st.radio(
         "NAVIGATION",
         ["Executive Summary", "Attrition Drivers", "Wellbeing/Performance",
-         "AI Model Intelligence", "Employees to Review", "Risk Predictor [Beta]",
+         "Model Intelligence", "Employees to Review", "Risk Predictor [Beta]",
          "Attrition Simulator"],
         label_visibility="collapsed",
     )
 
-    if page in ["AI Model Intelligence", "Risk Predictor [Beta]"]:
+    if page in ["Model Intelligence", "Risk Predictor [Beta]"]:
         st.divider()
         st.markdown("<div class='nav-section-label'>Active Model</div>", unsafe_allow_html=True)
 
-    if page in ["AI Model Intelligence", "Risk Predictor [Beta]"]:
+    if page in ["Model Intelligence", "Risk Predictor [Beta]"]:
         selected_model_name = st.selectbox(
             "Active Model",
             list(MODEL_CATALOGUE.keys()),
@@ -947,7 +947,7 @@ def risk_color(pct):
 #----------------------------------------------------------------------------------------------------------------------------------------------------
 #----------------------------------------------------------------------------------------------------------------------------------------------------
 
-if page == "AI Model Intelligence":
+if page == "Model Intelligence":
     with st.spinner("Training & benchmarking models…"):
         (results_df, trained_models, best_name, best_model_obj,
          best_thresh_val, ML_FEATURES, scaler, y_te, roc_data) = run_model_comparison(hash(str(df.shape)))
@@ -984,7 +984,7 @@ if page == "AI Model Intelligence":
 
     st.markdown(f"""
     <div class='page-header'>
-        <h1>📈 AI Model Intelligence</h1>
+        <h1>📈Model Intelligence</h1>
         <div class='ph-sub'>
             Active model: <b style='color:{_active_color}'>{_active_model_name}</b>
             &nbsp;·&nbsp; All charts, scores and risk flags update with your model selection
@@ -1461,7 +1461,7 @@ elif page == "Risk Predictor [Beta]":
     st.markdown("""
     <div class='section-note'>
         Adjust the sliders below to match the employee's profile. 
-        The AI model will instantly return a resignation risk score.
+        The model will instantly return a resignation risk score.
     </div>
     """, unsafe_allow_html=True)
 
