@@ -1,4 +1,4 @@
-# Attrition-Detector-App
+# Attrition-Detection-App
 
 A Streamlit-powered data science solution engineered to transform workforce attrition management from a reactive, "post-mortem" reporting process into a proactive early-warning system. This platform provides business operators and people managers with data-driven tools to mitigate turnover, balance workloads, and minimize financial exposure.
 
