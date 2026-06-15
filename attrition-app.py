@@ -898,15 +898,42 @@ with st.sidebar:
     st.markdown("<div class='nav-section-label'>Data Sync</div>", unsafe_allow_html=True)
     with st.expander("⚙️ Upload Dataset", expanded=False):
         uploaded_file = st.file_uploader("Upload Company CSV", type=["csv"], label_visibility="collapsed")
-        st.download_button(
-            label="⬇️ Download Template",
-            data=convert_df_to_csv(get_default_dataset()),
-            file_name="omni_retention_template.csv",
-            mime="text/csv",
-            use_container_width=True,
-        )
+    st.download_button(
+        label="⬇️ Download Template",
+        data=convert_df_to_csv(get_default_dataset()),
+        file_name="omni_retention_template.csv",
+        mime="text/csv",
+        use_container_width=True,
+    )
 
-user_df = df.copy() if df is not None else get_default_dataset()
+# 🌟 CONFIGURE YOUR PERSISTENT WEB LINK HERE:
+# Paste your public GitHub raw link, Dropbox raw URL, or Google Sheets published CSV URL below
+PERSISTENT_DATA_URL = "https://github.com/rrirdr/Attrition-Detection-App/blob/3975beb1cabd0bb989ab4fc136b2799c56eef6cd/HR_Attrition_MultiCompany.csv"
+
+# --- STEP 1: RESOLVE THE INITIAL BASELINE ENGINE DATA DATA ---
+# Checks for existing workspace data variable; if not found, checks for the web URL
+if 'df' in locals() and df is not None:
+    user_df = df.copy()
+elif PERSISTENT_DATA_URL and PERSISTENT_DATA_URL.strip() != "":
+    try:
+        user_df = pd.read_csv(PERSISTENT_DATA_URL)
+        # Apply standard datetime data formatting rules to web payload
+        user_df['Hire_Date'] = pd.to_datetime(user_df['Hire_Date'], errors='coerce')
+        user_df['Exit_Date'] = pd.to_datetime(user_df['Exit_Date'], errors='coerce')
+        st.sidebar.markdown("""
+        <div class='status-pill' style='background:rgba(96,165,250,0.05);border-color:rgba(96,165,250,0.2);margin-bottom:10px;'>
+            <div class='status-dot' style='background:#60A5FA;box-shadow:0 0 6px rgba(96,165,250,0.5);'></div>
+            <div style='font-size:0.8rem;color:#60A5FA;font-weight:500;'>Cloud Storage Synced</div>
+        </div>
+        """, unsafe_allow_html=True)
+    except Exception as e:
+        # If cloud link drops or fails, cleanly fallback to memory mock data function to prevent application crash
+        user_df = get_default_dataset()
+        st.sidebar.warning("⚠️ Cloud fetch failed. Using emergency template fallback.")
+else:
+    user_df = get_default_dataset()
+
+# --- STEP 2: HANDLE REAL-TIME LIVE DRAG-AND-DROP FILE UPLOADS ---
 if uploaded_file is not None:
     try:
         temp_df = pd.read_csv(uploaded_file)
@@ -918,11 +945,14 @@ if uploaded_file is not None:
         else:
             missing = set(EXPECTED_SCHEMA.keys()) - set(temp_df.columns)
             st.sidebar.error(f"❌ Column mismatch. Missing: {missing}")
+            # Do not change user_df, leave it running on Cloud fallback or get_default_dataset()
     except Exception as e:
-        st.sidebar.error(f"Error: {e}")
+        st.sidebar.error(f"Error reading uploaded CSV: {e}")
 
-if df is None:
-    st.error("🚨 Dataset missing. Place HR_Attrition_MultiCompany.csv in the 'Final Data Clean' folder.")
+# --- STEP 3: PIPELINE FAILSAFE AUDIT CHECK ---
+# Removed the aggressive structural st.stop() blocking call to keep your application up 24/7
+if user_df.empty:
+    st.error("🚨 Active Dataset completely empty. Verify your cloud network synchronization setup link parameters.")
     st.stop()
 
 def kpi_card(icon, label, value, sub, badge_text="", badge_class="badge-neu"):
@@ -984,7 +1014,7 @@ if page == "Model Intelligence":
 
     st.markdown(f"""
     <div class='page-header'>
-        <h1>📈Model Intelligence</h1>
+        <h1>📈 Model Intelligence</h1>
         <div class='ph-sub'>
             Active model: <b style='color:{_active_color}'>{_active_model_name}</b>
             &nbsp;·&nbsp; All charts, scores and risk flags update with your model selection
@@ -1551,6 +1581,13 @@ elif page == "Executive Summary":
     st.header("📊 Executive Summary Dashboard (Active Headcount Engine)")
     st.markdown("---")
 
+    # --- Schema Validation Check ---
+    # Ensures 'Hire_Date' exists in the loaded dataset before executing the processing engine
+    if 'Hire_Date' not in user_df.columns:
+        st.error("⚠️ **Dataset Reference Error:** Please download first the CSV which can be found from the repository (HR_Attrition_MultiCompany.csv) and upload it in the app.")
+        st.stop()  # Halts execution cleanly for this page block so no further errors show up below
+
+    # --- Data Processing Engine ---
     df_exec = user_df.copy()
     df_exec['Hire_Date'] = pd.to_datetime(df_exec['Hire_Date'], errors='coerce')
     df_exec['Exit_Date'] = pd.to_datetime(df_exec['Exit_Date'], errors='coerce')
@@ -1861,8 +1898,8 @@ elif page == "Attrition Drivers":
                 "YearsInCurrentRole": "Years in Current Role",
                 "Attrition": "Resignation Status",
                 "Attrition_Reason": "Resignation Reason",
-                "Hire_Date": "Hire Date",
-                "Exit_Date": "Exit Date",
+                "Hire_Date": "Hire_Date",
+                "Exit_Date": "Exit_Date",
                 "Attrited_Employees": "Resigned Employees",
                 "Active_Employees": "Active Employees",
                 "Attrition_Rate": "Resignation Rate",
@@ -1957,7 +1994,7 @@ elif page == "Attrition Drivers":
 
                 date_filter_options = []
                 if "Hire_Date" in filtered_df.columns and filtered_df["Hire_Date"].notna().any():
-                    date_filter_options.append("Hire Date")
+                    date_filter_options.append("Hire_Date")
                 if "Exit_Date" in filtered_df.columns and filtered_df["Exit_Date"].notna().any():
                     date_filter_options.append("Exit Date / Resignation Date")
                 if all(col in filtered_df.columns for col in ["Hire_Date", "Exit_Date"]) and filtered_df["Hire_Date"].notna().any():
@@ -1979,7 +2016,7 @@ elif page == "Attrition Drivers":
                             filtered_df["Hire_Date"].dropna(),
                             filtered_df["Exit_Date"].dropna()
                         ])
-                    elif selected_date_basis == "Hire Date":
+                    elif selected_date_basis == "Hire_Date":
                         date_bounds = filtered_df["Hire_Date"].dropna()
                     else:
                         date_bounds = filtered_df["Exit_Date"].dropna()
@@ -2029,11 +2066,11 @@ elif page == "Attrition Drivers":
                                     ).astype(int)
                                     filtered_df["Attrition"] = np.where(filtered_df["Attrition_Flag"].eq(1), "Yes", "No")
                                     date_filter_basis_summary = "Employment Activity Window"
-                                elif selected_date_basis == "Hire Date":
+                                elif selected_date_basis == "Hire_Date":
                                     filtered_df = filtered_df.loc[
                                         filtered_df["Hire_Date"].between(range_start, range_end, inclusive="both")
                                     ].copy()
-                                    date_filter_basis_summary = "Hire Date"
+                                    date_filter_basis_summary = "Hire_Date"
                                 else:
                                     filtered_df = filtered_df.loc[
                                         filtered_df["Exit_Date"].between(range_start, range_end, inclusive="both")
@@ -2488,7 +2525,7 @@ elif page == "Attrition Drivers":
 
                         export_filtered_df = filtered_df[detail_columns].copy()
                         display_records = export_filtered_df.rename(columns={col: pretty_label(col) for col in export_filtered_df.columns})
-                        for col in ["Hire Date", "Exit Date"]:
+                        for col in ["Hire_Date", "Exit Date"]:
                             if col in display_records.columns:
                                 display_records[col] = pd.to_datetime(display_records[col], errors="coerce").dt.strftime("%Y-%m-%d").fillna("")
 
